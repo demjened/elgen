@@ -16,7 +16,7 @@ Total duration: 14.671 seconds
 Average throughput: 13.702 docs/sec
 ```
 
-It uses Faker to create documents that can be used to measure the throughput of Elastic bulk indexing and inference pipelines.
+It uses [Faker](https://faker.readthedocs.io/) to create documents that can be used to measure the throughput of Elastic bulk indexing and inference pipelines.
 
 A sample document looks like this:
 ```json
@@ -25,13 +25,13 @@ A sample document looks like this:
     "title": "There record happen charge experience available suggest",
     "author": "Steven Shannon",
     "summary": "Base reduce have affect able southern.\nQuestion sister stuff yet million. Especially few student before.",
-    "text": "Stock PM way same green. Down force your total him view.\n\nFear sister word performance. (...) Every example end again live remember way."
+    "text": "Stock PM way same green. (...) Every example end again live remember way."
 }
 ```
 
 ## Requirements
 * Python 3.6+
-* Elastic Cloud deployment (in case you want to index the data)
+* [Elastic Cloud](https://www.elastic.co/cloud/) deployment (if you also want to index the data)
 
 ## Usage
 
@@ -42,12 +42,7 @@ python elgen.py
 
 Generate 100 documents of approximately 50KB each:
 ```sh
-python elgen.py --size 50000 --limit 100
-```
-
-Generate documents and save them to `data.ndjson` for bulk indexing in Elasticsearch:
-```sh
-python elgen.py --out-file data.ndjson
+python elgen.py --limit 100 --size 50000
 ```
 
 Generate documents and index them in `my-index` in the specified Elastic Cloud deployment:
@@ -55,7 +50,16 @@ Generate documents and index them in `my-index` in the specified Elastic Cloud d
 python elgen.py --index my-index --elastic-cloud-id my-cloud:... --elastic-username john --elastic-password doe123
 ```
 
+Generate documents and save them to `data.ndjson` for [bulk indexing](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) in Elasticsearch:
+```sh
+python elgen.py --out-file data.ndjson
+```
+
 See further options in [Configuration](#configuration).
+
+## Index and pipeline
+
+TBD
 
 ## Configuration
 
