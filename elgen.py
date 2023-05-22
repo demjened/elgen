@@ -78,9 +78,6 @@ def parse_args():
 
     parser = ArgumentParser(description="Generate and index documents for benchmarking Elasticsearch.")
 
-    parser.add_argument("-i", "--index", help="Target Elasticsearch index.", type=str, required=True)
-    parser.add_argument("-q", "--pipeline", help="Target inference pipeline name. (Default is same as index name)",
-                        type=str)
     parser.add_argument("-o", "--out-file", help="Output file.", type=str)
     parser.add_argument("-c", "--cloud-id", help="Elastic Cloud ID.",
                         type=str, default=os.getenv("ELASTIC_CLOUD_ID"))
@@ -88,14 +85,17 @@ def parse_args():
                         type=str, default=os.getenv("ELASTIC_USERNAME", "elastic"))
     parser.add_argument("-p", "--elastic-password", help="Elastic password.",
                         type=str, default=os.getenv("ELASTIC_PASSWORD"))
+    parser.add_argument("-i", "--index", help="Target Elasticsearch index.", type=str)
     parser.add_argument("-x", "--clear-index", help="Clear index before indexing documents.",
                         default=False, action="store_true")
+    parser.add_argument("-q", "--pipeline", help="Target inference pipeline name. (Default is same as index name)",
+                        type=str)
     parser.add_argument("-m", "--skip-ml-inference", help="Skip Machine Learning inference on documents.",
                         default=False, action="store_true")
-    parser.add_argument("-s", "--size", help="Approximate size of the documents in bytes. (Default 1000)",
-                        type=int, default=1000)
     parser.add_argument("-l", "--limit", help="Number of documents to generate. (Default 10)",
                         type=int, default=10)
+    parser.add_argument("-s", "--size", help="Approximate size of the documents in bytes. (Default 1000)",
+                        type=int, default=1000)
     parser.add_argument("-b", "--batch-size", help="Batch size for bulk generation and indexing. (Default 50)",
                         type=int, default=50)
     parser.add_argument("-d", "--debug", help="Enable debug mode.", default=False, action="store_true")
@@ -108,6 +108,10 @@ def parse_args():
 def validate_args():
     if OPTIONS.cloud_id is not None and (OPTIONS.elastic_username is None or OPTIONS.elastic_password is None):
         print_error("Elastic username and password are required when using Elastic Cloud")
+        exit(1)
+
+    if OPTIONS.cloud_id is not None and OPTIONS.index is None:
+        print_error("Index name is required when using Elastic Cloud")
         exit(1)
 
     if OPTIONS.size < 300:
@@ -170,7 +174,8 @@ def process():
         total_duration = time.time() - start_time
         avg_throughput = (OPTIONS.limit - remaining) / total_duration
 
-        print_debug(f"Rolling average throughput: {round(avg_throughput, 3)} docs/sec")
+        print_debug(f"""Indexed {OPTIONS.limit - remaining}/{OPTIONS.limit} documents
+Rolling average throughput: {round(avg_throughput, 3)} docs/sec""")
 
     print(f"""✅ DONE - Processed {OPTIONS.limit} documents of ~{OPTIONS.size} bytes each
 Total duration: {round(total_duration, 3)} seconds
