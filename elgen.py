@@ -21,12 +21,16 @@ def print_warning(msg: str):
 
 
 def clear_index(es_client: Elasticsearch):
+    """Clears the target index by deleting all documents."""
+
     if OPTIONS.clear_index:
         print(f"💣 Clearing index {OPTIONS.index}")
         es_client.delete_by_query(index=OPTIONS.index, query={"match_all": {}})
 
 
-def bulk_index_docs(docs, es_client: Elasticsearch):
+def bulk_index_docs(docs: list[object], es_client: Elasticsearch):
+    """Bulk indexes the given documents."""
+
     actions = []
     for doc in docs:
         actions.append({
@@ -34,7 +38,7 @@ def bulk_index_docs(docs, es_client: Elasticsearch):
             "_index": OPTIONS.index,
             "_id": doc["id"],
             "_source": doc,
-            "pipeline": OPTIONS.index,
+            "pipeline": OPTIONS.pipeline,
         })
 
     print_debug(f"Indexing {len(docs)} documents to {OPTIONS.index}...")
@@ -43,6 +47,8 @@ def bulk_index_docs(docs, es_client: Elasticsearch):
 
 
 def write_docs(docs, out_file):
+    """Writes bulk indexing actions for the supplied documents to the given file."""
+
     print_debug(f"Writing {len(docs)} documents to file...")
 
     for doc in docs:
@@ -52,6 +58,8 @@ def write_docs(docs, out_file):
 
 
 def generate_doc(size):
+    """Generates a document with the given approximate size in bytes."""
+
     paragraphs = []
     total_size = 300 # Start with approximate size of document without the "text" property
     while total_size < size:
@@ -67,6 +75,7 @@ def generate_doc(size):
         "text": "\n\n".join(paragraphs)
     }
 
+    # Set field to trigger Machine Learning inference
     if not OPTIONS.skip_ml_inference:
         doc["_run_ml_inference"] = True
 
@@ -74,6 +83,8 @@ def generate_doc(size):
 
 
 def parse_args():
+    """Parses command line arguments and stores them in OPTIONS."""
+
     global OPTIONS
 
     parser = ArgumentParser(description="Generate and index documents for benchmarking Elasticsearch.")
@@ -130,6 +141,8 @@ def validate_args():
 
 
 def process_batch_of_docs(batch_size, out_file, es_client):
+    """Generates and processes a batch of documents."""
+
     print(f"⚙️ Generating {batch_size} documents")
 
     docs = []
