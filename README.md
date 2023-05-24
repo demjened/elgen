@@ -64,7 +64,7 @@ See further options in [Configuration](#configuration).
 
 ## Ingest pipeline
 
-By default elgen bulk indexes documents into the specified index. If an ingest pipeline is attached to the index, it can be applied during the indexing process by specifying it with the `--pipeline` option. It will also set the `_run_ml_inference` flag, which will run any Machine Learning inference pipelines.
+By default elgen bulk indexes documents into the specified index. If an ingest pipeline is attached to the index, it can be applied during the indexing process by specifying it with the `--pipeline` option. It will also set the `_run_ml_inference` flag, which will run any Machine Learning inference pipelines associated with the index.
 
 To learn more about ingest and inference pipelines please refer to the [Enterprise Search guide](https://www.elastic.co/guide/en/enterprise-search/current/ingest-pipelines.html).
 
