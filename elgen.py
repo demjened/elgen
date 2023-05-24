@@ -33,17 +33,24 @@ def bulk_index_docs(docs: list[object], es_client: Elasticsearch):
 
     actions = []
     for doc in docs:
-        actions.append({
+        action = {
             "_op_type": "index",
             "_index": OPTIONS.index,
             "_id": doc["id"],
             "_source": doc,
-            "pipeline": OPTIONS.pipeline,
-        })
+        }
+        if OPTIONS.pipeline:
+            action["pipeline"] = OPTIONS.pipeline
+        actions.append(action)
 
     print_debug(f"Indexing {len(docs)} documents to {OPTIONS.index}...")
 
-    helpers.bulk(es_client, actions)
+    try:
+        helpers.bulk(es_client, actions)
+    except Exception as e:
+        print_error(f'Error while indexing documents: {e}')
+        print_error(f'First error: {e.errors[0]["index"]["error"]}')
+        exit(1)
 
 
 def write_docs(docs, out_file):
@@ -76,7 +83,7 @@ def generate_doc(size):
     }
 
     # Set field to trigger Machine Learning inference
-    if not OPTIONS.skip_ml_inference:
+    if OPTIONS.pipeline is not None:
         doc["_run_ml_inference"] = True
 
     return doc
@@ -99,10 +106,7 @@ def parse_args():
     parser.add_argument("-i", "--index", help="Target Elasticsearch index.", type=str)
     parser.add_argument("-x", "--clear-index", help="Clear index before indexing documents.",
                         default=False, action="store_true")
-    parser.add_argument("-q", "--pipeline", help="Target inference pipeline name. (Default is same as index name)",
-                        type=str)
-    parser.add_argument("-m", "--skip-ml-inference", help="Skip Machine Learning inference on documents.",
-                        default=False, action="store_true")
+    parser.add_argument("-q", "--pipeline", help="Ingest pipeline name.", type=str)
     parser.add_argument("-l", "--limit", help="Number of documents to generate. (Default 10)",
                         type=int, default=10)
     parser.add_argument("-s", "--size", help="Approximate size of the documents in bytes. (Default 1000)",
@@ -113,8 +117,6 @@ def parse_args():
 
     OPTIONS = parser.parse_args()
 
-    OPTIONS.pipeline = OPTIONS.pipeline or OPTIONS.index
-
 
 def validate_args():
     if OPTIONS.cloud_id is not None and (OPTIONS.elastic_username is None or OPTIONS.elastic_password is None):
@@ -123,6 +125,9 @@ def validate_args():
 
     if OPTIONS.cloud_id is not None and OPTIONS.index is None:
         print_error("Index name is required when using Elastic Cloud")
+        exit(1)
+    elif OPTIONS.out_file is not None and OPTIONS.index is None:
+        print_error("Index name is required for writing bulk index actions to file")
         exit(1)
 
     if OPTIONS.size < 300:
@@ -143,7 +148,7 @@ def validate_args():
 def process_batch_of_docs(batch_size, out_file, es_client):
     """Generates and processes a batch of documents."""
 
-    print(f"⚙️ Generating {batch_size} documents")
+    print(f"🪄 Generating {batch_size} documents")
 
     docs = []
     for _ in range(0, batch_size):
@@ -172,8 +177,8 @@ def process():
 
         short_cloud_id = OPTIONS.cloud_id[:OPTIONS.cloud_id.index(":") + 6]
         print(f"📒 Indexing documents to index {OPTIONS.index} on Elastic Cloud {short_cloud_id}(...)")
-        if OPTIONS.skip_ml_inference:
-            print("✖️ NOT applying Machine Learning inference on documents")
+        if OPTIONS.pipeline:
+            print(f"⚙️ Applying ingest pipeline {OPTIONS.pipeline} with Machine Learning inference (if it\'s enabled)")
 
     start_time = time.time()
     total_duration = 0
